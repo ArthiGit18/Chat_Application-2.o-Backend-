@@ -27,13 +27,30 @@ app.use('/api/chat', chatRoutes);
 app.use('/api', userRoutes);
 
 app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true,
+    origin: '*',
+    credentials: true
 }));
 
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
+
+
+const allowedOrigins = [
+    'http://localhost:3000',                 // Local development
+    'https://yourapp.netlify.app',           // Replace with your Netlify domain
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
 
 app.use(session({
   secret: 'your_secret_key',
