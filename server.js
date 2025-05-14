@@ -45,6 +45,17 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use('/api/auth', authRoutes);
 
+app.get('/api/auth/google/callback',
+    passport.authenticate('google', {
+        failureRedirect: '/login',
+        session: false
+    }),
+    (req, res) => {
+        // Successful authentication, redirect home.
+        res.redirect('/');
+    }
+);
+
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
