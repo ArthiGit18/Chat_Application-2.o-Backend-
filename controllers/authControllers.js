@@ -109,13 +109,17 @@ exports.getUserById = async (req, res) => {
 };
 
 // Google
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.error("❌ Missing Google OAuth Credentials");
+    throw new Error("Google OAuth Credentials are not configured.");
+}
+
 passport.use(
     new GoogleStrategy(
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: process.env.GOOGLE_CALLBACK_URL
-
+        callbackURL: "https://chatapplication-2o-backend-production.up.railway.app/api/auth/google/callback",
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
@@ -125,7 +129,7 @@ passport.use(
               username: profile.displayName,
               email: profile.emails[0].value,
               googleId: profile.id,
-              avatar: './assets/avator/1.jpeg' // <- set default image path
+              avatar: './assets/avator/1.jpeg' 
             });
           }
           return done(null, user);
@@ -134,7 +138,7 @@ passport.use(
         }
       }
     )
-  );
+);
   
   
   passport.serializeUser((user, done) => {
