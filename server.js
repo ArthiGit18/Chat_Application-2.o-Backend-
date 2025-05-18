@@ -35,19 +35,19 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS configuration
 const allowedOrigins = [
-    'http://localhost:3000',               
-    'https://chatapplication-20.netlify.app', 
+  'http://localhost:3000',                 // your dev frontend URL
+  'https://chatapplication-20.netlify.app'  // your deployed frontend URL
 ];
 
 app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // Allow non-browser requests like Postman
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error('Not allowed by CORS'), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true  // VERY IMPORTANT for sending cookies/sessions
 }));
 
 // MongoDB connection
@@ -60,13 +60,14 @@ if (!MONGO_URI) {
 
 // 🔄 **Session and Passport configuration** - Using `connect-mongo` for sessions
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'your_secret_key',  
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-        mongoUrl: MONGO_URI,
-        collectionName: 'sessions',     // Optional: Name of the session collection
-    }),
+  secret: process.env.SESSION_SECRET || 'your_secret_key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',  // HTTPS only in prod
+    httpOnly: true,
+    sameSite: 'lax'  // or 'none' if cross-site cookies are needed with HTTPS
+  }
 }));
 
 app.use(passport.initialize());
