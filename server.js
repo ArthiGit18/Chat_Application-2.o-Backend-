@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const passport = require('passport');
 require('dotenv').config();
 const path = require('path');
@@ -22,7 +23,6 @@ socket.init(server);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 
 // Set up routes
 app.use('/api/chat', chatRoutes);
@@ -35,8 +35,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS configuration
 const allowedOrigins = [
-    'http://localhost:3000',               // Local development
-    'https://chatapplication-20.netlify.app',         // Replace with your production domain
+    'http://localhost:3000',               
+    'https://chatapplication-20.netlify.app', 
 ];
 
 app.use(cors({
@@ -50,11 +50,23 @@ app.use(cors({
     credentials: true,
 }));
 
-// Session and Passport configuration
+// MongoDB connection
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+    console.error('❌ MongoDB URI is not defined in the environment variables');
+    process.exit(1);  // Exit if MONGO_URI is not found
+}
+
+// 🔄 **Session and Passport configuration** - Using `connect-mongo` for sessions
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your_secret_key',  // Store secret key securely
-  resave: false,
-  saveUninitialized: false,
+    secret: process.env.SESSION_SECRET || 'your_secret_key',  
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: MONGO_URI,
+        collectionName: 'sessions',     // Optional: Name of the session collection
+    }),
 }));
 
 app.use(passport.initialize());
@@ -72,14 +84,6 @@ app.get('/api/auth/google/callback',
     }
 );
 
-// MongoDB connection
-const MONGO_URI = process.env.MONGO_URI;
-
-if (!MONGO_URI) {
-    console.error('❌ MongoDB URI is not defined in the environment variables');
-    process.exit(1);  // Exit if MONGO_URI is not found
-}
-
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     server.listen(process.env.PORT || 5000, () => {
@@ -87,6 +91,12 @@ mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
     });
   })
   .catch((err) => {
-    console.error('❌ MongoDB connection error:', err);
+    console.error('❌ MongoDB connection error:', err.message);
     process.exit(1);  // Exit if there's a connection issue
   });
+
+// 🛡️ Safety check to verify environment variables are loaded
+console.log("✅ MongoDB URI:", MONGO_URI);
+console.log("✅ Session Secret:", process.env.SESSION_SECRET);
+console.log("✅ Google Client ID:", process.env.GOOGLE_CLIENT_ID);
+console.log("✅ Google Client Secret:", process.env.GOOGLE_CLIENT_SECRET);
