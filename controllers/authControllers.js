@@ -60,40 +60,42 @@ exports.register = async (req, res) => {
 
 // 🚀 Login
 exports.login = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        console.log("🔑 Login attempt:", email);
+    console.log("🔥 Login Route Hit");
+    console.log("📝 Request Body:", req.body);
 
-        const user = await User.findOne({ email });
-        if (!user) {
-            console.log("❌ Invalid credentials: User not found");
-            return res.status(400).json({ msg: "Invalid credentials" });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            console.log("❌ Invalid credentials: Password mismatch");
-            return res.status(400).json({ msg: "Invalid credentials" });
-        }
-
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
-        console.log("✅ Login successful, token generated");
-
-        res.json({
-            token,
-            user: {
-                id: user._id,
-                username: user.username,
-                email: user.email,
-                phone: user.phone ?? undefined,
-                avatar: user.avatar
-            }
-        });
-    } catch (err) {
-        console.error("❌ Server Error during login:", err.message);
-        res.status(500).json({ msg: "Server error", error: err.message });
+    const { email, password } = req.body;
+    if (!email || !password) {
+        console.log("❌ Missing email or password");
+        return res.status(400).json({ msg: "Email and password are required" });
     }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+        console.log("❌ User not found");
+        return res.status(400).json({ msg: "Invalid credentials" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+        console.log("❌ Password mismatch");
+        return res.status(400).json({ msg: "Invalid credentials" });
+    }
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    console.log("✅ Login successful, token generated");
+
+    res.json({
+        token,
+        user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            phone: user.phone ?? undefined,
+            avatar: user.avatar
+        }
+    });
 };
+
 
 // 🚀 Get All Users
 exports.getAllUsers = async (req, res) => {
